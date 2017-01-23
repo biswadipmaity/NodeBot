@@ -3,6 +3,10 @@
 uint8_t MAC_array[6];
 char MAC_char[18];
 
+// Global variables
+WiFiClient wifiClient;
+const char* server = "debugrobotics.azurewebsites.net";
+
 //Wifi
 #include <DNSServer.h>
 #include <ESP8266WebServer.h>
@@ -65,6 +69,10 @@ void init_OTA()
 {
   ArduinoOTA.onStart([]()
   {
+    noInterrupts();
+    timer0_detachInterrupt();
+    interrupts();
+
       String type;
       if (ArduinoOTA.getCommand() == U_FLASH)
         type = "sketch";
@@ -99,6 +107,21 @@ void init_OTA()
   Serial.println("OTA Ready");
 }
 
+void upload_IP() {
+  if (wifiClient.connect(server,80))
+  {
+     Serial.println("Uploading IP");
+     // Make a HTTP request:
+     String clientIP = ipToString(WiFi.localIP());
+     wifiClient.print("GET /Home/SetIP?clientName=bot&clientIP="+ clientIP + " HTTP/1.1\n");
+     wifiClient.print("Host: ");
+     wifiClient.println(server);
+     wifiClient.println("Accept: */*");
+     wifiClient.println("Connection: close");
+     wifiClient.println();
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   Serial.println("");
@@ -120,15 +143,16 @@ void setup() {
   // write the buffer to the display
   display.display();
 
-  //init_wifi();
-  //init_OTA();
+  init_wifi();
+  init_OTA();
+  upload_IP();
   init_motors();
   init_timer();
 }
 
 void loop() {
-   //ArduinoOTA.handle();
-
+   ArduinoOTA.handle();
+   /*
    //ML_fwd(120);
    ML_fwd(Output_L);
    MR_fwd(Output_R);
@@ -136,7 +160,8 @@ void loop() {
    ML_rev(Output_L);
    MR_rev(Output_R);
    delay(2000);
-
+   */
+   
    /*
    for(int i=0;i<128;i++)
    {
