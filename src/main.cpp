@@ -150,7 +150,7 @@ void setup() {
   upload_IP();
   wheel_state=stop;
   init_motors();
-  init_timer();
+  //  init_timer();
 
   cloudPrintln("Ready to Receive");
 }
@@ -158,50 +158,24 @@ void setup() {
 String res = "";
 void loop() {
    ArduinoOTA.handle();
-   wheel_state=forward;
-   Setpoint=50;
-   delay(5000);
-   ArduinoOTA.handle();
-   wheel_state=reverse;
-   Setpoint=50;
-   delay(5000);
 
    /*
-   ArduinoOTA.handle();
    wheel_state=forward;
-   for (int i=0;i<50;i++)
-   {
-      Setpoint=i;
-      delay(100);
-   }
-   ArduinoOTA.handle();
-   for (int i=50;i>=0;i--)
-   {
-     Setpoint=i;
-     delay(100);
-   }
+   Setpoint=50;
+   delay(5000);
    ArduinoOTA.handle();
    wheel_state=reverse;
-   for (int i=0;i<50;i++)
-   {
-     Setpoint=i;
-     delay(100);
-   }
-   ArduinoOTA.handle();
-   for (int i=50;i>=0;i--)
-   {
-     Setpoint=i;
-     delay(100);
-   }
+   Setpoint=50;
+   delay(5000);
    */
-   /*
-   ML_fwd(200);
-   MR_fwd(200);
-   delay(25000);                  // waits for a second
+
+   ML_fwd(150);
+   MR_fwd(150);
+   delay(5000);                  // waits for a second
+   ArduinoOTA.handle();
    ML_rev(200);
    MR_rev(200);
-   delay(25000);                  // waits for a second
-   */
+   delay(5000);                  // waits for a second
 
    /*
    if (Serial.available() > 0)
