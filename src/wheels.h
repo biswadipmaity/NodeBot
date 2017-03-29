@@ -1,11 +1,14 @@
 #include "Arduino.h"
 #include <PID_v1.h>
 
+//#define DEBUG_WHEELS
+
 //Define Variables we'll be connecting to
 double left_ticks, right_ticks;
 
-double Setpoint = 3, Output_L=120, Output_R=120;
-double consKp=4, consKi=0.2, consKd=1;
+double Setpoint = 0, Output_L=0, Output_R=0;
+double consKp=2, consKi=0.1, consKd=0.5;
+
 
 //Specify the links and initial tuning parameters
 PID myPID_L(&left_ticks, &Output_L, &Setpoint, consKp, consKi, consKd, DIRECT);
@@ -15,6 +18,12 @@ PID myPID_R(&right_ticks, &Output_R, &Setpoint, consKp, consKi, consKd, DIRECT);
 #define ML_B D6
 #define MR_A D3
 #define MR_B D4
+
+enum{
+  forward,
+  reverse,
+  stop
+} wheel_state;
 
 void init_motors()
 {
@@ -79,41 +88,55 @@ void count_encoder_R()
 
   prev_time_R = millis();
   wheel_count_R++;
-  //Serial.print("R : ");
-  //Serial.println(wheel_count_R);
+  //Serial.print("R: ");
+  //Serial.println(wheel_count_R++);
 }
 
 unsigned long prev_left_ticks=0;
 unsigned long prev_right_ticks=0;
 
 void timer0_ISR (void) {
-
   left_ticks = wheel_count_L - prev_left_ticks;
   prev_left_ticks = wheel_count_L;
+  left_ticks *= 10;
 
   right_ticks = wheel_count_R - prev_right_ticks;
   prev_right_ticks = wheel_count_R;
+  right_ticks *= 10;
 
   myPID_L.Compute();
   myPID_R.Compute();
 
-  Serial.print("L : ");
-  Serial.print(left_ticks);
-  Serial.print("\tOut : ");
-  Serial.print(Output_L);
-  Serial.print("\tR : ");
-  Serial.print(right_ticks);
-  Serial.print("\tOut : ");
-  Serial.println(Output_L);
+  if(wheel_state == forward)
+  {
+    ML_fwd(Output_L);
+    MR_fwd(Output_R);
+  }
+  else if(wheel_state == reverse)
+  {
+    ML_rev(Output_L);
+    MR_rev(Output_R);
+  }
 
-  timer0_write(ESP.getCycleCount() + 8000000L); // 80MHz == 1sec
+  #ifdef DEBUG_WHEELS
+    Serial.print("L : ");
+    Serial.print(left_ticks);
+    Serial.print("\tOut : ");
+    Serial.print(Output_L);
+    Serial.print("\tR : ");
+    Serial.print(right_ticks);
+    Serial.print("\tOut : ");
+    Serial.println(Output_L);
+  #endif
+
+  timer0_write(ESP.getCycleCount() + 8000000L); // 8MHz == 100 ms
 }
 
 void init_timer() {
   noInterrupts();
   timer0_isr_init();
   timer0_attachInterrupt(timer0_ISR);
-  timer0_write(ESP.getCycleCount() + 8000000L); // 80MHz == 1sec
+  timer0_write(ESP.getCycleCount() + 8000000L); // 8MHz == 100 ms
   interrupts();
 
   myPID_L.SetMode(AUTOMATIC);

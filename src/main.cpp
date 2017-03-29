@@ -1,11 +1,16 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
+#include <ArduinoHttpClient.h>
+
 uint8_t MAC_array[6];
 char MAC_char[18];
 
 // Global variables
-WiFiClient wifiClient;
-const char* server = "debugrobotics.azurewebsites.net";
+const char serverAddress[] = "debugrobotics.azurewebsites.net";
+WiFiClient wifiClnt;
+HttpClient client = HttpClient(wifiClnt, serverAddress, 80);
+
+#include "CloudPrint.h"
 
 //Wifi
 #include <DNSServer.h>
@@ -14,11 +19,6 @@ const char* server = "debugrobotics.azurewebsites.net";
 
 //ArduinoOTA
 #include <ArduinoOTA.h>
-
-#include <Wire.h>
-#include "SSD1306.h"
-#include "images.h"
-SSD1306  display(0x3c, D3, D4);
 
 //Wheels Code
 #define INTERRUPT_PIN_L D1
@@ -43,6 +43,7 @@ String ipToString(IPAddress ip){
 void init_wifi()
 {
   WiFiManager wifiManager;
+  wifiManager.setDebugOutput(false);
   wifiManager.setAPCallback(configModeCallback);
   if (!wifiManager.autoConnect("STCI-BOT")) {
     Serial.println("failed to connect and hit timeout");
@@ -50,19 +51,6 @@ void init_wifi()
     ESP.reset();
     delay(1000);
   }
-  Serial.println("connected...yeey :)");
-  Serial.println(WiFi.localIP());
-
-  display.drawString(0, 44, ipToString(WiFi.localIP()));
-  // write the buffer to the display
-  display.display();
-}
-
-void init_display()
-{
-  display.init();
-  display.flipScreenVertically();
-  display.setFont(ArialMT_Plain_10);
 }
 
 void init_OTA()
@@ -71,6 +59,8 @@ void init_OTA()
   {
     noInterrupts();
     timer0_detachInterrupt();
+    ML_fwd(0);
+    MR_fwd(0);
     interrupts();
 
       String type;
@@ -80,88 +70,165 @@ void init_OTA()
         type = "filesystem";
 
       // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
-      Serial.println("Start updating " + type);
+      //Serial.println("Start updating " + type);
   });
 
   ArduinoOTA.onEnd([]()
   {
-      Serial.println("\nEnd");
+      //Serial.println("\nEnd");
   });
 
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
   {
-      Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+      //Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
   });
 
   ArduinoOTA.onError([](ota_error_t error)
   {
+    /*
       Serial.printf("Error[%u]: ", error);
       if (error == OTA_AUTH_ERROR) Serial.println("Auth Failed");
       else if (error == OTA_BEGIN_ERROR) Serial.println("Begin Failed");
       else if (error == OTA_CONNECT_ERROR) Serial.println("Connect Failed");
       else if (error == OTA_RECEIVE_ERROR) Serial.println("Receive Failed");
       else if (error == OTA_END_ERROR) Serial.println("End Failed");
+      */
   });
 
   ArduinoOTA.begin();
-  Serial.println("OTA Ready");
+  //Serial.println("OTA Ready");
 }
 
 void upload_IP() {
-  if (wifiClient.connect(server,80))
-  {
-     Serial.println("Uploading IP");
-     // Make a HTTP request:
-     String clientIP = ipToString(WiFi.localIP());
-     wifiClient.print("GET /Home/SetIP?clientName=bot&clientIP="+ clientIP + " HTTP/1.1\n");
-     wifiClient.print("Host: ");
-     wifiClient.println(server);
-     wifiClient.println("Accept: */*");
-     wifiClient.println("Connection: close");
-     wifiClient.println();
+  String clientIP = ipToString(WiFi.localIP());
+  client.get("/Home/SetIP?clientName=tk1bot&clientIP="+ clientIP);
+  cloudPrintln(clientIP);
+}
+
+void setMotorSpeed(String speedStr) {
+  int lastCmdEnd = speedStr.lastIndexOf("#");
+  if (lastCmdEnd >= 9) {
+    int rightMotorSpeed = speedStr.substring(lastCmdEnd - 4, lastCmdEnd).toInt();
+    int leftMotorSpeed = speedStr.substring(lastCmdEnd - 9, lastCmdEnd - 5).toInt();
+
+    if (leftMotorSpeed >= 0)
+    {
+      ML_fwd(leftMotorSpeed);
+    }
+    else
+    {
+      ML_rev(leftMotorSpeed * -1);
+    }
+
+    if (rightMotorSpeed >= 0)
+    {
+      MR_fwd(rightMotorSpeed);
+    }
+    else
+    {
+      MR_rev(rightMotorSpeed * -1);
+    }
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  Serial.println("");
-  Serial.print("Started  : ");
+
   WiFi.macAddress(MAC_array);
   for (int i = 0; i < sizeof(MAC_array); ++i){
     sprintf(MAC_char,"%s%02x:",MAC_char,MAC_array[i]);
   }
-  Serial.println(MAC_char);
+  //Serial.println(MAC_char);
 
   pinMode(INTERRUPT_PIN_L, INPUT_PULLUP);
   pinMode(INTERRUPT_PIN_R, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_L), count_encoder_L, FALLING);
   attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_R), count_encoder_R, FALLING);
 
-  init_display();
-  display.drawString(0, 0, "Hello World OTA Rocks");
-  display.drawString(0, 22, MAC_char);
-  // write the buffer to the display
-  display.display();
-
   init_wifi();
   init_OTA();
   upload_IP();
+  wheel_state=stop;
   init_motors();
   init_timer();
+
+  cloudPrintln("Ready to Receive");
 }
 
+String res = "";
 void loop() {
    ArduinoOTA.handle();
+   wheel_state=forward;
+   Setpoint=50;
+   delay(5000);
+   ArduinoOTA.handle();
+   wheel_state=reverse;
+   Setpoint=50;
+   delay(5000);
+
    /*
-   //ML_fwd(120);
-   ML_fwd(Output_L);
-   MR_fwd(Output_R);
-   delay(2000);
-   ML_rev(Output_L);
-   MR_rev(Output_R);
-   delay(2000);
+   ArduinoOTA.handle();
+   wheel_state=forward;
+   for (int i=0;i<50;i++)
+   {
+      Setpoint=i;
+      delay(100);
+   }
+   ArduinoOTA.handle();
+   for (int i=50;i>=0;i--)
+   {
+     Setpoint=i;
+     delay(100);
+   }
+   ArduinoOTA.handle();
+   wheel_state=reverse;
+   for (int i=0;i<50;i++)
+   {
+     Setpoint=i;
+     delay(100);
+   }
+   ArduinoOTA.handle();
+   for (int i=50;i>=0;i--)
+   {
+     Setpoint=i;
+     delay(100);
+   }
    */
-   
+   /*
+   ML_fwd(200);
+   MR_fwd(200);
+   delay(25000);                  // waits for a second
+   ML_rev(200);
+   MR_rev(200);
+   delay(25000);                  // waits for a second
+   */
+
+   /*
+   if (Serial.available() > 0)
+   {
+     char recvd;
+     while (Serial.available() > 0)
+     {
+       recvd = Serial.read();
+       res+= String(recvd);
+
+       if (recvd == '#')
+       {
+         break;
+       }
+     }
+
+     if (recvd == '#')
+     {
+        setMotorSpeed(res);
+        res = "";
+        Serial.println("Ack");
+     }
+   }
+   delay(100);
+   //cloudPrint(".");
+   */
+
    /*
    for(int i=0;i<128;i++)
    {
@@ -177,13 +244,4 @@ void loop() {
      delay(10);
    }
    */
-
-   /*
-  ML_fwd();
-  MR_fwd();
-  delay(1000);                  // waits for a second
-  ML_rev();
-  MR_rev();
-  delay(1000);                  // waits for a second
-  */
-}
+ }
