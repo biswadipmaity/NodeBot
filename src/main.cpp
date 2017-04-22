@@ -158,7 +158,7 @@ void setup() {
 String res = "";
 void loop() {
    ArduinoOTA.handle();
-
+   handleSerial();
    /*
    wheel_state=forward;
    Setpoint=50;
@@ -169,6 +169,7 @@ void loop() {
    delay(5000);
    */
 
+   /*
    ML_fwd(150);
    MR_fwd(150);
    delay(5000);                  // waits for a second
@@ -176,6 +177,7 @@ void loop() {
    ML_rev(200);
    MR_rev(200);
    delay(5000);                  // waits for a second
+   */
 
    /*
    if (Serial.available() > 0)

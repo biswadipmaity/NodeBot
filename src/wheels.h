@@ -14,10 +14,10 @@ double consKp=2, consKi=0.1, consKd=0.5;
 PID myPID_L(&left_ticks, &Output_L, &Setpoint, consKp, consKi, consKd, DIRECT);
 PID myPID_R(&right_ticks, &Output_R, &Setpoint, consKp, consKi, consKd, DIRECT);
 
-#define ML_A D5
-#define ML_B D6
-#define MR_A D3
-#define MR_B D4
+#define ML_A D6
+#define ML_B D5
+#define MR_A D4
+#define MR_B D3
 
 enum{
   forward,
@@ -141,4 +141,41 @@ void init_timer() {
 
   myPID_L.SetMode(AUTOMATIC);
   myPID_R.SetMode(AUTOMATIC);
+}
+
+String serialBuffer = "";
+void handleSerial()
+{
+  if(Serial.available())
+  {
+    serialBuffer += Serial.readString();
+
+    int lastCmdEnd = serialBuffer.lastIndexOf("#");
+    if (lastCmdEnd >= 7)
+    {
+      char direction = serialBuffer.charAt(lastCmdEnd-4);
+      int leftMotorSpeed = serialBuffer.substring(lastCmdEnd - 3, lastCmdEnd).toInt();
+      if(direction=='+')
+      {
+        ML_fwd(leftMotorSpeed);
+      }
+      else
+      {
+        ML_rev(leftMotorSpeed);
+      }
+
+      direction = serialBuffer.charAt(lastCmdEnd-8);
+      int rightMotorSpeed = serialBuffer.substring(lastCmdEnd - 7, lastCmdEnd - 4).toInt();
+      if(direction=='+')
+      {
+        MR_fwd(rightMotorSpeed);
+      }
+      else
+      {
+        MR_rev(rightMotorSpeed);
+      }
+
+      serialBuffer = serialBuffer.substring(lastCmdEnd);
+    }
+  }
 }
