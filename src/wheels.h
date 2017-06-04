@@ -23,7 +23,7 @@ enum{
   forward,
   reverse,
   stop
-} wheel_state;
+} wheel_state, right_motor_direction, left_motor_direction;
 
 void init_motors()
 {
@@ -141,41 +141,4 @@ void init_timer() {
 
   myPID_L.SetMode(AUTOMATIC);
   myPID_R.SetMode(AUTOMATIC);
-}
-
-String serialBuffer = "";
-void handleSerial()
-{
-  if(Serial.available())
-  {
-    serialBuffer += Serial.readString();
-
-    int lastCmdEnd = serialBuffer.lastIndexOf("#");
-    if (lastCmdEnd >= 7)
-    {
-      char direction = serialBuffer.charAt(lastCmdEnd-4);
-      int leftMotorSpeed = serialBuffer.substring(lastCmdEnd - 3, lastCmdEnd).toInt();
-      if(direction=='+')
-      {
-        ML_fwd(leftMotorSpeed);
-      }
-      else
-      {
-        ML_rev(leftMotorSpeed);
-      }
-
-      direction = serialBuffer.charAt(lastCmdEnd-8);
-      int rightMotorSpeed = serialBuffer.substring(lastCmdEnd - 7, lastCmdEnd - 4).toInt();
-      if(direction=='+')
-      {
-        MR_fwd(rightMotorSpeed);
-      }
-      else
-      {
-        MR_rev(rightMotorSpeed);
-      }
-
-      serialBuffer = serialBuffer.substring(lastCmdEnd);
-    }
-  }
 }

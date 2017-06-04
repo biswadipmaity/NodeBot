@@ -24,6 +24,7 @@ HttpClient client = HttpClient(wifiClnt, serverAddress, 80);
 #define INTERRUPT_PIN_L D1
 #define INTERRUPT_PIN_R D2
 #include <wheels.h>
+#include <serial.h>
 
 //gets called when WiFiManager enters configuration mode
 void configModeCallback (WiFiManager *myWiFiManager) {
@@ -152,13 +153,14 @@ void setup() {
   init_motors();
   //  init_timer();
 
+  receiverState=waiting;
   cloudPrintln("Ready to Receive");
 }
 
 String res = "";
 void loop() {
    ArduinoOTA.handle();
-   handleSerial();
+   serialEvent();
    /*
    wheel_state=forward;
    Setpoint=50;
