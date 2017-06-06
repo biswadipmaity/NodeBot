@@ -1,6 +1,7 @@
 #include "Arduino.h"
 #include <ESP8266WiFi.h>
 #include <ArduinoHttpClient.h>
+#include <PID.h>
 
 uint8_t MAC_array[6];
 char MAC_char[18];
@@ -142,80 +143,54 @@ void setup() {
 
   pinMode(INTERRUPT_PIN_L, INPUT_PULLUP);
   pinMode(INTERRUPT_PIN_R, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_L), count_encoder_L, FALLING);
-  attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_R), count_encoder_R, FALLING);
+  // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_R), count_encoder_R, FALLING);
+  // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_L), count_encoder_L, FALLING);
 
   init_wifi();
   init_OTA();
   upload_IP();
   wheel_state=stop;
-  init_motors();
-  //  init_timer();
 
-  cloudPrintln("Ready to Receive");
+  init_motors();
+  // init_timer();
+
+  //cloudPrintln("Ready to Receive");
 }
 
 String res = "";
 void loop() {
    ArduinoOTA.handle();
-
-   /*
-   wheel_state=forward;
-   Setpoint=50;
-   delay(5000);
-   ArduinoOTA.handle();
-   wheel_state=reverse;
-   Setpoint=50;
-   delay(5000);
-   */
-
-   ML_fwd(150);
-   MR_fwd(150);
-   delay(5000);                  // waits for a second
-   ArduinoOTA.handle();
-   ML_rev(200);
-   MR_rev(200);
-   delay(5000);                  // waits for a second
-
-   /*
-   if (Serial.available() > 0)
+   //if (Serial.available() > 0)
    {
-     char recvd;
-     while (Serial.available() > 0)
-     {
-       recvd = Serial.read();
-       res+= String(recvd);
+      char received='w';
+      //while(Serial.available())
+      {
+        //received=Serial.read();
+        switch(received){
+          case 'w':
+            ML_fwd(200);
+            MR_fwd(200);
+            break;
+          case 's':
+            ML_rev(200);
+            MR_rev(200);
+            break;
+          case 'a':
+            ML_rev(200);
+            MR_fwd(200);
+            break;
+          case 'd':
+            ML_fwd(200);
+            MR_rev(200);
+            break;
+          case 'x':
+            ML_fwd(0);
+            MR_fwd(0);
+            break;
 
-       if (recvd == '#')
-       {
-         break;
-       }
-     }
-
-     if (recvd == '#')
-     {
-        setMotorSpeed(res);
-        res = "";
-        Serial.println("Ack");
-     }
+        }
+    }
    }
+
    delay(100);
-   //cloudPrint(".");
-   */
-
-   /*
-   for(int i=0;i<128;i++)
-   {
-     ML_fwd(i);
-     MR_fwd(i);
-     delay(10);
-   }
-
-   for(int i=128;i>0;i--)
-   {
-     ML_rev(i);
-     MR_rev(i);
-     delay(10);
-   }
-   */
  }

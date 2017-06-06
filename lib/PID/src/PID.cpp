@@ -1,15 +1,16 @@
 #include "PID.h"
-
+#include "Arduino.h"
 using namespace std;
 
-PID::PID(long millis,double KP, double KI,double KD,double InitState,int LPLength){
+PID::PID(bool dummy,double KP, double KI,double KD,double Bias,double InitState,int LPLength){
   kp=KP;
   ki=KI;
   kd=KD;
+  bias=Bias;
   integral=InitState;
   lpLength=LPLength;
   lastVal=0;
-  lastTime=millis;
+  lastTime=millis();
   windowArray=new double[lpLength];
   for(int pos=0;pos<lpLength;pos++) {
     windowArray[pos]=1/lpLength;
@@ -35,19 +36,21 @@ double PID::lpCalc(double input){
   return output;
 }
 
-double PID::calculate(double input,long millis){
-  double value=lpCalc(input);
-  integral+=input;
+double PID::calculate(double input){
+  double value=input;//lpCalc(input);
   double diff=value-lastVal;
-  double timeDiff=millis-lastTime;
+  double timeDiff=0.05;//(millis()-lastTime)/1000;
   double avg=(input+lastVal)/2.0;
+  integral+=avg;
   lastVal=value;
-  lastTime=millis;
+  lastTime=millis();
   if(!running){
     running=true;
     return 0;
   }
-  return -(kp*(input+kd*(diff/timeDiff)+ki*avg*timeDiff));
+  Serial.print("Integral: ");
+  Serial.println(integral);
+  return -(kp*(input+kd*(diff/timeDiff)+ki*integral*timeDiff));
 }
 
 void PID::resetLP(){
