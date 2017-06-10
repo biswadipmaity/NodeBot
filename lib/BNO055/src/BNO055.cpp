@@ -85,7 +85,7 @@ void gyro_readValues(void)
 
   /* Also send calibration data for each sensor. */
   uint8_t sys, gyro, accel, mag = 0;
-  bno.getCalibration(&00, &gyro, &accel, &mag);
+  bno.getCalibration(&sys, &gyro, &accel, &mag);
   Serial.print(F("Calibration: "));
   Serial.print(sys, DEC);
   Serial.print(F(" "));

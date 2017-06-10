@@ -156,15 +156,10 @@ void setup() {
   //init_timer();
   //cloudPrintln("Ready to Receive");
 
-    /*
-   while (1)
-   {
-     ESP.wdtFeed();
-   }
-   */
     gyro_setup();
     while(1)
     {
+       ESP.wdtFeed();
        gyro_readValues();
     }
 }
