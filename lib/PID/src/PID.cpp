@@ -2,6 +2,8 @@
 #include "Arduino.h"
 using namespace std;
 
+#define DEBUG_WHEELS
+
 PID::PID(bool dummy,double KP, double KI,double KD,double Bias,double InitState,int LPLength){
   kp=KP;
   ki=KI;
@@ -48,8 +50,11 @@ double PID::calculate(double input){
     running=true;
     return 0;
   }
-  Serial.print("Integral: ");
-  Serial.println(integral);
+
+  #ifdef DEBUG_WHEELS
+    Serial.print("Integral: ");
+    Serial.println(integral);
+  #endif
   return -(kp*(input+kd*(diff/timeDiff)+ki*integral*timeDiff));
 }
 

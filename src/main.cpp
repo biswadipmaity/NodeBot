@@ -2,6 +2,7 @@
 #include <ESP8266WiFi.h>
 #include <ArduinoHttpClient.h>
 #include <PID.h>
+#include <BNO055.h>
 
 uint8_t MAC_array[6];
 char MAC_char[18];
@@ -143,23 +144,35 @@ void setup() {
 
   pinMode(INTERRUPT_PIN_L, INPUT_PULLUP);
   pinMode(INTERRUPT_PIN_R, INPUT_PULLUP);
-  // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_R), count_encoder_R, FALLING);
-  // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_L), count_encoder_L, FALLING);
+  //attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_R), count_encoder_R, FALLING);
+  //attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN_L), count_encoder_L, FALLING);
 
-  init_wifi();
-  init_OTA();
-  upload_IP();
+  //init_wifi();
+  //init_OTA();
+  //upload_IP();
   wheel_state=stop;
 
-  init_motors();
-  // init_timer();
-
+  //init_motors();
+  //init_timer();
   //cloudPrintln("Ready to Receive");
+
+    /*
+   while (1)
+   {
+     ESP.wdtFeed();
+   }
+   */
+    gyro_setup();
+    while(1)
+    {
+       gyro_readValues();
+    }
 }
 
 String res = "";
 void loop() {
-   ArduinoOTA.handle();
+
+   //ArduinoOTA.handle();
    //if (Serial.available() > 0)
    {
       char received='w';
@@ -192,5 +205,5 @@ void loop() {
     }
    }
 
-   delay(100);
+   delay(50);
  }
